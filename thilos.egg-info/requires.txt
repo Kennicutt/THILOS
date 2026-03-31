@@ -1,0 +1,11 @@
+astroalign
+astrometry_net_client
+astropy
+astroquery
+ccdproc
+lacosmic
+loguru
+matplotlib
+numpy
+PyYAML
+sep

@@ -31,8 +31,8 @@ import yaml as py
 from lacosmic.core import lacosmic
 import sep
 
-from Color_Codes import bcolors as bcl
-from rebinning import *
+from THILOS.Color_Codes import bcolors as bcl
+from THILOS.rebinning import *
 from loguru import logger
 
 import logging, inspect

@@ -1,3 +1,38 @@
+Metadata-Version: 2.4
+Name: thilos
+Version: 0.0.2
+Summary: This software is designed to reduce Deep Field Imaging observations obtained with HIPERCAM.
+Home-page: https://github.com/Kennicutt/THILOS
+Author: Fabricio M. Pérez-Toledo
+Author-email: fabricio.telescope@gmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: astroalign
+Requires-Dist: astrometry_net_client
+Requires-Dist: astropy
+Requires-Dist: astroquery
+Requires-Dist: ccdproc
+Requires-Dist: lacosmic
+Requires-Dist: loguru
+Requires-Dist: matplotlib
+Requires-Dist: numpy
+Requires-Dist: PyYAML
+Requires-Dist: sep
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
 # THILOS
 
 __THILOS__ is a reduction software for the Broad Band Imaging mode of OSIRIS+ at GTC.

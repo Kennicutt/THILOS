@@ -20,16 +20,17 @@ __author__="Fabricio M. Pérez-Toledo"
 __version__ = "0.0.1"
 __license__ = "GPL v3.0"
 
-from check_files import *
-from reduction_hcam import *
-from THILOS.BKP_alignment_hcam import *
+from THILOS.check_files import *
+from THILOS.reduction_hcam import *
+from THILOS.alignment_hcam import *
 
 import argparse, time, os, shutil
 import os, json, warnings
-import pkg_resources
+#!import pkg_resources
+from importlib.resources import files
 from pathlib import Path
 
-from Color_Codes import bcolors as bcl
+from THILOS.Color_Codes import bcolors as bcl
 from loguru import logger
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -43,10 +44,12 @@ def create_config_file_home():
     This function creates a copy of the configuration file in .config/thilos
     / for easier accessibility.
     """
-    config_path = pkg_resources.resource_filename(
-    'THILOS', 'config/configuration.json')
-    shutil.copy(config_path,Path(os.getcwd())/'configuration.json')
-    print(f"{bcl.OKGREEN}Configuration file created successfully in the current directory.{bcl.ENDC}")
+    #!config_path = pkg_resources.resource_filename(
+    #!'THILOS', 'config/configuration.json')
+    #!shutil.copy(config_path,Path(os.getcwd())/'configuration.json')
+    with files('THILOS').joinpath('config/configuration.json') as config_path:
+        shutil.copy(config_path, Path(os.getcwd())/'configuration.json')
+    logger.info(f"Configuration file created successfully in the current directory.")
     sys.exit()
 
 def readJSON() -> json:
@@ -134,10 +137,12 @@ you need to fill in the correct variable.")
     #Subsequently, the cleaned images are saved.
     logger.info(f'{bcl.OKBLUE}---------- Starting the reductions for {PRG}-{OB} ----------{bcl.ENDC}')
     
-    #?bpm_path = pkg_resources.resource_filename('THILOS', 'BPM/BPM_OSIRIS_PLUS.fits')
-    bpm_path = "/home/fabricio.perez/Core/OBS-TECNICO/1_PROYECTOS_TECNICOS/T301_THILOS/THILOS/BPM/BPM_OSIRIS_PLUS.fits"
+    #!bpm_path = pkg_resources.resource_filename('THILOS', 'BPM/BPM_OSIRIS_PLUS.fits')
+    with as_file(files('THILOS').joinpath('BPM/BPM_OSIRIS_PLUS.fits')) as bpm_path:
+        bpm_path_str = str(bpm_path)
+        
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
-                path_mask=bpm_path)
+                path_mask=bpm_path_str)
     o.get_imagetypes()
     o.load_BPM()
     o.check_binning()
@@ -197,16 +202,14 @@ you need to fill in the correct variable.")
             for sky in ['SKY', 'NOSKY']:
                 if conf['REDUCTION']['save_not_sky'] or sky == 'SKY':
                     logger.info(f'{bcl.OKCYAN}++++++++++ Aligment for {filt} & {sky} ++++++++++{bcl.ENDC}')
-                    align = aligner.run_aligning(filt, sky=sky)
-                    #lst = aligner._load_frames(filt, sky=sky)
-                    #fr = CCDData.read(lst[0], unit='adu')
-                    header = aligner.ref.header
+                    aligner.run_aligning(filt, sky=sky)
+                    header = aligner.ref_header.copy()
                     header['STACKED'] = (True, 'Stacked image')
-                    header['exptime'] = aligner.total_exptime * aligner.num #(al.num + 1.)
+                    header['exptime'] = aligner.ref_header['exptime'] * aligner.num
                     logger.info(f"Estimated total exposure time: {header['exptime']} sec")
-                    wcs = aligner.fr.wcs
+                    wcs = aligner.ref_wcs.copy()
                     logger.info(f"Updating the WCS information")
-                    save_fits(align, header, wcs, str(aligner.PATH_REDUCED / f'{PRG}_{OB}_{filt}_stacked_{sky}.fits'))
+                    save_fits(aligner.stacked_image, header, wcs, str(aligner.PATH_REDUCED / f'{PRG}_{OB}_{filt}_stacked_{sky}.fits'))
                     
                 else:
                     logger.warning(f'{bcl.WARNING}Alignments are not going to be executed for NOSKY{bcl.ENDC}')

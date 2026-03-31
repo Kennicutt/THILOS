@@ -17,7 +17,8 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 import json, os
-import pkg_resources
+#!import pkg_resources
+from importlib.resources import as_file, files
 import ccdproc as ccdp
 from pathlib import Path
 from typing import Dict
@@ -98,10 +99,16 @@ def readJSON() -> json:
         logger.info('Configuration file found in the current working directory.')
         return json.load(open(Path(os.getcwd())/'configuration.json'))
     else:
-        config_path = pkg_resources.resource_filename(
-            'THILOS', 'config/configuration.json')
-        logger.info(f'Configuration file not found in the current working directory. Reading from {config_path}')
-        return json.load(open(config_path))
+        #!config_path = pkg_resources.resource_filename(
+        #!    'THILOS', 'config/configuration.json')
+        with as_file(files('THILOS').joinpath('config/configuration.json')) as config_path:
+            # config_path es un Path object temporal
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                logger.info(f'Configuration file not found in the current working directory. Reading from {config_path}')
+                return config
+        #!logger.info(f'Configuration file not found in the current working directory. Reading from {config_path}')
+        #!return json.load(open(config_path))
 
 
 def update_config(config_path: str, config: Dict) -> Dict:
@@ -166,17 +173,17 @@ def check_files(path_config: str = None) -> json:
     Returns:
         json: The updated configuration dictionary.
     """
-    #conf = readJSON()
-    conf = read_config(path_config + 'configuration.json') #---> Temporal HAY QUE USAR EL readJSON() ORIGINAL
-    #directory = Path(os.getcwd())/'raw'
-    directory = path_config +'raw'  #---> Temporal HAY QUE USAR EL os.getcwd() ORIGINAL
+    conf = readJSON()
+    #!conf = read_config(path_config + 'configuration.json') #---> Temporal HAY QUE USAR EL readJSON() ORIGINAL
+    directory = Path(os.getcwd())/'raw'
+    #!directory = path_config +'raw'  #---> Temporal HAY QUE USAR EL os.getcwd() ORIGINAL
 
     ic = ccdp.ImageFileCollection(directory, keywords=['GTCPRGID','GTCOBID','OBSMODE','OBJECT','FILTER2','EXPTIME'])
     image_types = classify_images(ic.summary)
 
-    conf['DIRECTORIES']['PATH'] = path_config #str(Path(os.getcwd()))
-    conf['DIRECTORIES']['PATH_DATA'] = path_config + 'raw' #str(Path(os.getcwd())/'raw')
-    conf['DIRECTORIES']['PATH_OUTPUT'] = path_config + 'reduced' #str(Path(os.getcwd())/'reduced') 
+    conf['DIRECTORIES']['PATH'] = str(Path(os.getcwd())) #! path_config
+    conf['DIRECTORIES']['PATH_DATA'] = str(Path(os.getcwd())/'raw') #! path_config + 'raw'
+    conf['DIRECTORIES']['PATH_OUTPUT'] = str(Path(os.getcwd())/'reduced') #! path_config + 'reduced' 
 
     # Update config based on image types
     if conf['REDUCTION']['use_BIAS']:
