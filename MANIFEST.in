@@ -1,0 +1,2 @@
+recursive-include THILOS/config *
+recursive-include THILOS/BPM *

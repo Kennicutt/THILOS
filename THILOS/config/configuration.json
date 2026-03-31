@@ -1,0 +1,45 @@
+{
+    "DIRECTORIES": {
+        "PATH": "",
+        "PATH_DATA": "",
+        "PATH_OUTPUT": ""
+    },
+    "REDUCTION": {
+        "use_BIAS": true,
+        "use_FLAT": true,
+        "use_STD": true,
+        "no_CRs": false,
+        "contrast": 1.5,
+        "cr_threshold": 5.0,
+        "neighbor_threshold": 5.0,
+        "save_std": true,
+        "save_sky": true,
+        "save_not_sky": false,
+        "save_fringing": false
+    },
+    "ALIGNING": {
+        "use_aligning": true,
+        "max_control_points": 60,
+        "stacking_method": "median"
+    },
+    "ASTROMETRY": {
+        "use_astrometry": true,
+        "No_Session": "",
+        "set_scale_estimate": {
+            "scale": 0.254,
+            "unknown": 10,
+            "scale_units": "arcsecperpix"
+        },
+        "radius": 0.1,
+        "downsample_factor": 2.0,
+        "use_sextractor": true,
+        "crpix_center": true,
+        "parity": 1
+    },
+    "PHOTOMETRY": {
+        "use_photometry": true,
+        "threshold": 5.0
+    },
+    "PRG": "",
+    "OB": ""
+}
