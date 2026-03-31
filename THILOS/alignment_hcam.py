@@ -42,7 +42,7 @@ from typing import List, Tuple, Optional, Union
 from loguru import logger
 import warnings
 
-from Color_Codes import bcolors as bcl
+from THILOS.Color_Codes import bcolors as bcl
 
 import logging, inspect
 
@@ -53,6 +53,7 @@ kernel = np.array([[1., 2., 3., 2., 1.],
                    [3., 5., 8., 5., 3.],
                    [2., 3., 5., 3., 2.],
                    [1., 2., 3., 2., 1.]])
+#?kernel = np.ascontiguousarray(kernel) #!
 visualize = False
 #Define functions
 
@@ -296,6 +297,8 @@ class AstroImageAligner:
 
     @staticmethod
     def extract_sources(data, kernel, thresh=1.5):
+        #?if data.dtype.byteorder != '=' and data.dtype.byteorder != '|':
+        #?    data = data.astype(data.dtype.newbyteorder('='))
         sky_background = sep.Background(data)  #Estimate sky background
         data_sub = data - sky_background  #Subtract sky background
         sources = sep.extract(data_sub, thresh=thresh, err=sky_background.globalrms, filter_kernel=kernel)  #Detect sources
@@ -483,8 +486,12 @@ class AstroImageAligner:
         #Load the reference image and its WCS
         ref_data, ref_header = fits.getdata(pathfiles[0], header=True)
         ref_wcs = WCS(ref_header)
+
+        self.ref_header = ref_header.copy() #It's needed out.
+        self.ref_wcs = ref_wcs.copy() #It's needed out.
     
-        ref_data = ref_data.byteswap().newbyteorder()
+        #?ref_data = ref_data.byteswap().view(ref_data.dtype.newbyteorder())
+        ref_data = ref_data.astype(ref_data.dtype.newbyteorder('=')) #& ref_data.byteswap().newbyteorder()
 
         #Create a list to store the coordinates of the detected sources in the reference image
         ref_coords, ref_flux = self.obtain_list_coords_flux(self.extract_sources(ref_data, kernel))
@@ -496,7 +503,8 @@ class AstroImageAligner:
             img_data, img_header = fits.getdata(path, header=True)
             img_wcs = WCS(img_header)
     
-            img_data = img_data.byteswap().newbyteorder()
+            #?img_data = img_data.byteswap().view(ref_data.dtype.newbyteorder())
+            img_data = img_data.astype(img_data.dtype.newbyteorder('=')) #& img_data.byteswap().newbyteorder()
     
             #Show the example image
             if visualize:
@@ -541,6 +549,7 @@ class AstroImageAligner:
             logger.info("Finished processing frame.")
 
         stack = np.sum(np.array(aligned_frames), axis=0)
+        self.num = len(aligned_frames)
     
         if visualize:
             logger.info("Visualizing stacked aligned frames...")
@@ -549,6 +558,7 @@ class AstroImageAligner:
         df.to_csv(self.PATH_REDUCED / f'alignment_results_{noccd}.csv', index=False)
         img = CCDData(stack, header=ref_header, wcs=ref_wcs, unit=u.adu)
         img.write(self.PATH_REDUCED / f'STACKED_{noccd}.fits', overwrite=True)
+        self.stacked_image = img
 
 
 
