@@ -137,10 +137,12 @@ you need to fill in the correct variable.")
     #Subsequently, the cleaned images are saved.
     logger.info(f'{bcl.OKBLUE}---------- Starting the reductions for {PRG}-{OB} ----------{bcl.ENDC}')
     
-    #?bpm_path = pkg_resources.resource_filename('THILOS', 'BPM/BPM_OSIRIS_PLUS.fits')
-    bpm_path = "/home/fabricio.perez/Core/OBS-TECNICO/1_PROYECTOS_TECNICOS/T301_THILOS/THILOS/BPM/BPM_OSIRIS_PLUS.fits"
+    #!bpm_path = pkg_resources.resource_filename('THILOS', 'BPM/BPM_OSIRIS_PLUS.fits')
+    with as_file(files('THILOS').joinpath('BPM/BPM_OSIRIS_PLUS.fits')) as bpm_path:
+        bpm_path_str = str(bpm_path)
+        
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
-                path_mask=bpm_path)
+                path_mask=bpm_path_str)
     o.get_imagetypes()
     o.load_BPM()
     o.check_binning()
@@ -201,11 +203,9 @@ you need to fill in the correct variable.")
                 if conf['REDUCTION']['save_not_sky'] or sky == 'SKY':
                     logger.info(f'{bcl.OKCYAN}++++++++++ Aligment for {filt} & {sky} ++++++++++{bcl.ENDC}')
                     aligner.run_aligning(filt, sky=sky)
-                    #lst = aligner._load_frames(filt, sky=sky)
-                    #fr = CCDData.read(lst[0], unit='adu')
                     header = aligner.ref_header.copy()
                     header['STACKED'] = (True, 'Stacked image')
-                    header['exptime'] = aligner.ref_header['exptime'] * aligner.num #(al.num + 1.)
+                    header['exptime'] = aligner.ref_header['exptime'] * aligner.num
                     logger.info(f"Estimated total exposure time: {header['exptime']} sec")
                     wcs = aligner.ref_wcs.copy()
                     logger.info(f"Updating the WCS information")
