@@ -6,7 +6,8 @@ Developed by __Fabricio M. Pérez-Toledo__
 
 ## General Description
 
-**S**oftware to **AU**tomatize in a **S**imple **E**nvironment the **R**eduction of **O**siris+ data (**THILOS**) processes OSIRIS+ raw science frames to address noise, cosmetic defects, and pixel heterogeneity, preparing them for photometric analysis. Correcting these artifacts is a critical prerequisite for reliable scientific analysis. The software applies observation-specific reduction steps, ensuring optimized treatment for different data types. Developed with a focus on simplicity and efficiency, **THILOS** streamlines the reduction pipeline, enabling researchers to obtain calibrated data ready for photometric studies.
+**T**he **HI**percam **Lo**ng-exposure **O**bservations **S**olution (THILOS) is a software for the automatic reduction of deep-imaging observations
+with long exposure times simultaneously across all five Sloan broad-band filters. The software applies observation-specific reduction steps, ensuring optimized treatment for different data types. Developed with a focus on simplicity and efficiency, **THILOS** streamlines the reduction pipeline, enabling researchers to obtain calibrated data ready for photometric studies.
 
 ### Key Reduction Steps:
 
