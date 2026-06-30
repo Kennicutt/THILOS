@@ -8,6 +8,8 @@ loguru==0.7.3
 matplotlib==3.10.3
 numpy==2.3.1
 PyYAML==6.0.2
+pandas==3.0.3
+opencv-python==4.13.0.92
 sep==1.4.1
 sphinx
 sphinx-rtd-theme

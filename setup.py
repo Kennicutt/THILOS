@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="thilos",
-    version="0.0.7",
+    version="0.0.8",
     packages=find_packages(where='.'),
     package_data={
         'THILOS    ': [
