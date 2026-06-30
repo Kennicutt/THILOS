@@ -23,10 +23,10 @@
         "stacking_method": "median"
     },
     "ASTROMETRY": {
-        "use_astrometry": true,
+        "use_astrometry": false,
         "No_Session": "",
         "set_scale_estimate": {
-            "scale": 0.254,
+            "scale": 0.081,
             "unknown": 10,
             "scale_units": "arcsecperpix"
         },
@@ -35,10 +35,6 @@
         "use_sextractor": true,
         "crpix_center": true,
         "parity": 1
-    },
-    "PHOTOMETRY": {
-        "use_photometry": true,
-        "threshold": 5.0
     },
     "PRG": "",
     "OB": ""

@@ -6,6 +6,7 @@ THILOS/Color_Codes.py
 THILOS/DRP.py
 THILOS/__init__.py
 THILOS/alignment_hcam.py
+THILOS/astrometry_hcam.py
 THILOS/check_files.py
 THILOS/rebinning.py
 THILOS/reduction_hcam.py

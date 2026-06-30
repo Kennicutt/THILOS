@@ -23,6 +23,7 @@ __license__ = "GPL v3.0"
 from THILOS.check_files import *
 from THILOS.reduction_hcam import *
 from THILOS.alignment_hcam import *
+from THILOS.astrometry_hcam import *
 
 import argparse, time, os, shutil
 import os, json, warnings
@@ -218,6 +219,85 @@ you need to fill in the correct variable.")
         print(2*"\n")
     else:
         logger.warning(f'{bcl.WARNING}The alignments are not going to be executed{bcl.ENDC}')
+
+    if conf['ASTROMETRY']['use_astrometry']:
+        logger.info(f"{bcl.OKBLUE}---------- Start the astrometrization ----------{bcl.ENDC}")
+        #!del filt
+        ic_ast = ccdp.ImageFileCollection(conf['DIRECTORIES']['PATH_OUTPUT'], keywords='*', glob_include='*stacked*', glob_exclude='*NOSKY*')
+        lst_filt = list(ic_ast.summary['filtro'])
+        for filt in lst_filt:
+            logger.info(f'{bcl.OKCYAN}++++++++++ Astrometrization for the stacked image with {filt} filter ++++++++++{bcl.ENDC}')
+            try:
+                best_wcs, new_frame = solving_astrometry(PRG, OB, filt, conf, sky='SKY', calib_std=False)
+                logger.info(f'{bcl.OKGREEN}New WCS for the stacked image with {filt} filter.{bcl.ENDC}')
+            except:
+                new_frame = CCDData.read(conf['DIRECTORIES']['PATH_OUTPUT'] / f'{PRG}_{OB}_{filt}_stacked_SKY.fits', unit='adu')
+                best_wcs = None
+                logger.error(f'{bcl.ERROR}Failed astrometrization for the stacked image with {filt} filter{bcl.ENDC}')
+            for sky in ['SKY', 'NOSKY']:
+                if sky == 'SKY':
+                    if best_wcs is not None:
+                        new_frame.header['ASTROMETRY'] = (True, 'Astrometrized image')
+                        new_frame.write(Path(conf['DIRECTORIES']['PATH_OUTPUT']) / f'{PRG}_{OB}_{filt}_ast_SKY.fits', overwrite=True)
+                        logger.info(f'{bcl.OKGREEN}Successful astrometrization for the stacked image with {filt} and SKY{bcl.ENDC}')
+                    else:
+                        new_frame.header['ASTROMETRY'] = (False, 'Astrometrized image')
+                        new_frame.write(Path(conf['DIRECTORIES']['PATH_OUTPUT']) / f'{PRG}_{OB}_{filt}_ast_SKY.fits', overwrite=True)
+                        logger.warning(f'{bcl.WARNING}Failed astrometrization for the stacked image with {filt} and SKY. Conservation of original WCS{bcl.ENDC}')
+                else:
+                    if conf['REDUCTION']['save_not_sky']:
+                        nosky = CCDData.read(conf['DIRECTORIES']['PATH_OUTPUT'] / f'{PRG}_{OB}_{filt}_stacked_NOSKY.fits', unit='adu')
+                        if best_wcs is not None:
+                            nosky.wcs = WCS(best_wcs)
+                            nosky.header['ASTROMETRY'] = (True, 'Astrometrized image')
+                            nosky.write(Path(conf['DIRECTORIES']['PATH_OUTPUT']) / f'{PRG}_{OB}_{filt}_ast_NOSKY.fits', overwrite=True)
+                            logger.info(f'{bcl.OKGREEN}Successful astrometrization for the stacked image with {filt} and NOSKY{bcl.ENDC}')
+                        else:
+                            nosky.wcs = nosky.wcs
+                            nosky.header['ASTROMETRY'] = (False, 'Astrometrized image')
+                            nosky.write(Path(conf['DIRECTORIES']['PATH_OUTPUT']) / f'{PRG}_{OB}_{filt}_ast_NOSKY.fits', overwrite=True)
+                            logger.warning(f'{bcl.WARNING}Failed astrometrization for the stacked image with {filt} and NOSKY. Conservation of original WCS{bcl.ENDC}')
+                    else:
+                        logger.warning(f'{bcl.WARNING}The astrometry is not going to be executed for NOSKY{bcl.ENDC}')
+
+                logger.info(f'{bcl.OKCYAN}END of the astrometrization for {filt} and {sky}{bcl.ENDC}')
+                time.sleep(10)
+    else:
+        logger.warning(f'{bcl.WARNING}The astrometry is not going to be executed{bcl.ENDC}')
+
+    if conf['REDUCTION']['use_STD'] and conf['ASTROMETRY']['use_astrometry']:
+        logger.info(f'{bcl.OKCYAN}---------- Start astrometrization for STD star ----------{bcl.ENDC}')
+        time.sleep(30)
+        ic_std = ccdp.ImageFileCollection(conf['DIRECTORIES']['PATH_OUTPUT'], keywords='*', glob_include='*STD*', glob_exclude='*NOSKY*')
+        lst_object = list(set(ic_std.summary['object']))
+        try:
+            best_wcs_std, _ = solving_astrometry(PRG, OB, filt, conf, sky='SKY', calib_std=True)
+            logger.info(f'{bcl.OKGREEN}New WCS for the STD star with {filt} filter.{bcl.ENDC}')
+        except:
+            best_wcs_std = None
+            logger.error(f'{bcl.ERROR}Failed astrometrization for the STD star with {filt} filter{bcl.ENDC}')
+
+        for path_to_std in ic_std.files_filtered(include_path=True):
+            std_img = CCDData.read(path_to_std, unit='adu')
+            if best_wcs_std is not None:
+                std_img.wcs = WCS(best_wcs_std)
+                std_img.header['ASTROMETRY'] = (True, 'Astrometrized image')
+                std_img.write(path_to_std, overwrite=True)
+                logger.info(f'{bcl.OKGREEN}Successful astrometrization done for the {std_img.header["OBJECT"]} with {std_img.header["FILTER2"]}{bcl.ENDC}')
+            else:
+                std_img.wcs = std_img.wcs
+                std_img.header['ASTROMETRY'] = (False, 'Astrometrized image')
+                std_img.write(path_to_std, overwrite=True)
+                logger.warning(f'{bcl.WARNING}Failed astrometrization for the {std_img.header["OBJECT"]} with {std_img.header["FILTER2"]}. Conserve the original WCS{bcl.ENDC}')
+
+
+        logger.info(f'{bcl.OKCYAN}END of astrometrization for STD{bcl.ENDC}')
+        print(2*"\n")
+    else:
+        logger.warning(f'{bcl.WARNING}The astrometry for STDs are not going to be executed{bcl.ENDC}')
+
+    logger.info(f'{bcl.OKBLUE}------------------- End of the astrometrization -------------------{bcl.ENDC}')
+    print(2*"\n")
 
 if __name__ == '__main__':
     run()
