@@ -11,7 +11,6 @@ THILOS/rebinning.py
 THILOS/reduction_hcam.py
 THILOS/BPM/BPM_OSIRIS_PLUS.fits
 THILOS/config/configuration.json
-THILOS/config/photometric_standards.json
 thilos.egg-info/PKG-INFO
 thilos.egg-info/SOURCES.txt
 thilos.egg-info/dependency_links.txt

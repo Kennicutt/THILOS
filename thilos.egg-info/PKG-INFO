@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: thilos
-Version: 0.0.2
+Version: 0.0.9
 Summary: This software is designed to reduce Deep Field Imaging observations obtained with HIPERCAM.
 Home-page: https://github.com/Kennicutt/THILOS
 Author: Fabricio M. Pérez-Toledo
@@ -22,6 +22,8 @@ Requires-Dist: matplotlib
 Requires-Dist: numpy
 Requires-Dist: PyYAML
 Requires-Dist: sep
+Requires-Dist: pandas
+Requires-Dist: opencv-python
 Dynamic: author
 Dynamic: author-email
 Dynamic: classifier
@@ -35,7 +37,7 @@ Dynamic: summary
 
 # THILOS
 
-__THILOS__ is a reduction software for the Broad Band Imaging mode of OSIRIS+ at GTC.
+__THILOS__ is a reduction software for the Broad Band Imaging mode of HIPERCAM at GTC.
 
 Developed by __Fabricio M. Pérez-Toledo__
 
@@ -46,15 +48,12 @@ with long exposure times simultaneously across all five Sloan broad-band filters
 
 ### Key Reduction Steps:
 
-1. Application of a __Bad Pixel Mask (BPM)__ to all frames.
-2. Creation of the __Master Bias__.
-3. Creation of the __Master Flat__.
-4. Application of master calibration frames to both __standard star__ and __science frames__.
-5. Removal of __cosmic rays__.
-6. __Sky subtraction__.
-7. Alignment of __science frames__.
-8. __Astrometric calibration__.
-9. __Flux calibration__.
+1. Creation of the __Master Bias__.
+2. Creation of the __Master Flat__.
+3. Application of master calibration frames to both __standard star__ and __science frames__.
+4. Removal of __cosmic rays__.
+5. __Sky subtraction__.
+6. Alignment of __science frames__.
 
 ### Input Requirements:
 
@@ -72,10 +71,8 @@ The generated results consist of one image per observed band. For each image, th
 - __Bias subtraction__
 - __Flat-field correction__ (including fringing correction for the Sloan z band, if applicable)
 - __Image alignment and stacking__
-- __Astrometric calibration__
-- __Photometric calibration__ (estimation of the zero-point, ZP ± error)
 
-To address cosmetic defects, a __Bad Pixel Mask (BPM)__ is applied, and the __LACosmic algorithm__ is used to handle cosmic ray removal.
+To address cosmetic defects, the __LACosmic algorithm__ is used to handle cosmic ray removal.
 
 ## Requirements
 
@@ -96,7 +93,9 @@ automatically together the :
     matplotlib>=3.10.3
     numpy>=2.3.1
     PyYAML>=6.0.2
-    sep>=1.4.1`
+    sep>=1.4.1
+    pandas>=3.0.3
+    opencv-python>=4.13.0.92
 
 ### Hardware Requirements
 - __RAM__: Minimum 4GB (higher is recommended for large datasets).
@@ -111,17 +110,56 @@ Installing THILOS is straightforward. Follow these steps:
 
 2. __Install THILOS__ using `pip`:
     ```
-    pip install sausero
+    pip install thilos
 
 That's it! THILOS is now almost ready to use ;)
 
 ### Optional: Creating a New Conda Environment
 
-If you don’t have an existing Conda environment, you can create one specifically for SAUSERO with the following commands:
+If you don’t have an existing Conda environment, you can create one specifically for THILOS with the following commands:
 
-    conda create -n sausero_env python=3.11 -y
-    conda activate sausero_env
-    pip install sausero
+    conda create -n thilos_env python=3.11 -y
+    conda activate thilos_env
+    pip install thilos
+
+## BEFORE YOU USE THILOS (FOR LINUX USERS)
+
+HIPERCAM frames are data cubes, which means that each frame contains full temporal series of images for each of the five Sloan bands. Therefore, before running THILOS, you must split the frames into individual images for each band. This can be done using the joinup script provided by the HIPERCAM software package.
+
+You __MUST__ install HIPERCAM's image for docker. You should follow the HIPERCAM website instructions. https://github.com/HiPERCAM/hipercam
+
+    $ docker build -t hipercam:latest -f Software/hipercam.dockerfile .
+
+The correct way to avoid to log in with hiperuser by default generating a permission incompatibility is using the following command:
+
+    $ docker run -it --rm --user root -v <PathToYourObservationData>:/home/hiperuser/data hipercam:latest
+
+### HOW TO GET INDIVIDUAL FRAMES?
+
+First, you need to extract the frames from compressed file that you have downloaded from the GTC archive, FTP, etc. Then, you place the frames in the `original/` folder of your observation directory. After that, you can run the following command to split the frames into individual images for each band and full temporal series::
+
+    $ joinup data/original/<some.fits>
+
+Now, you need to setup the script (it's IRAF-like command line interface) to split the frames correctly. The next example shows how to setup the script for a specific observation. You can adjust the parameters according to your needs.
+
+    $ first - first frame to process [1]: 
+    $ last - last frame to grab [0]: 
+    $ trim - do you want to trim edges of windows? [False]: 
+    $ ccd - CCD(s) to join up [0 for all] [0]: 
+    $ aper - aperture file to generate regions for ds9 ['none' to ignore] [none]: 
+    $ bias - bias frame ['none' to ignore] [none]: 
+    $ dark - dark frame ['none' to ignore] [none]: 
+    $ flat - flat frame ['none' is normal choice with no bias] [none]: 
+    $ fmap - fringe map ['none' to ignore] [<PathToFringeMap>/fmap.hcm]: (only if you want to use one) 
+    $ msub - subtract median from each window? [False]: 
+    $ ndigit - number of digits to use for frame numbers in output names [4]: (Customizable)
+    $ dtype - output data type [float32]: 
+    $ dmax - maximum allowable amount of data to write out [GB] [100.0]: (Customizable)
+    $ nmax - maximum allowable number of frames to write out [10000]: (Customizable)
+    $ compress - internal HDU compression to apply [none]: 
+    $ odir - directory for the output files [<OutputFolderPath>]: (Customizable)
+
+    
 
 ## First-Time Setup
 
@@ -137,20 +175,14 @@ You must edit the configuration file, which is located in your frame directory.
 
 You need to set the following parameters in the configuration file:
 
-1. `No_Session` (Required): This is your Astrometry.net API key. Example:
-
-    ```
-    "No_Session":"astrometry-api-key"
-
-To obtain this key, create an account on [Astrometry.net](https://nova.astrometry.net/). Copy your API key and paste it into the configuration file.
-
-2. `Optional Setup`: You need to adjust the setup according to your observation. For example, if you are working with Sloan z and need to remove the fringing, you must enable the option in the `Reduction` section and set the `save_fringing` parameter to true. Regarding the alignment, astrometrization, or photometry parameters, they can be modified, but they generally work well as they are.
+`Optional Setup`: You need to adjust the setup according to your observation. For example, if you are working with Sloan z and need to remove the fringing, you must enable the option in the `Reduction` section and set the `save_fringing` parameter to true. Regarding the alignment can be modified, but they generally work well as they are.
 
 The directory structure must follow the format `<Your_Program>_<Your_OB>/`. Inside this directory, you should have 
 a `raw/` folder where the original frames are stored, and a `reduced/` folder where the reduced frames will be saved.
 
     Your_program/
         configuration.json
+        original/
         raw/
         reduced/
 
@@ -177,34 +209,20 @@ A. __Reduced science frames__:
 B. __Aligned frames__:
 - Both sky-included and sky-subtracted versions.
 
-C. __Astrometrized frames__:
-- Frames with astrometric calibration applied.
-
-D. __Visualization PNG files__:
-- A PNG showing the detected sources in the Field of View (FoV).
-- A PNG showing the photometric standard star.
-
-E. __Final reduced science frames__:
+C. __Final reduced science frames__:
 - Both sky-included and sky-subtracted versions.
-
-
-### Important Notes
-
-- By default, __THILOS__ ensures your data remains private when using Astrometry.net. The software's internal configuration avoids sharing any data with the Astrometry.net community, ensuring your data's security.
 
 ## Project Structure
 
     THILOS/
         BPM/
-            BPM_HIPERCAM.fits -> BAD PIXEL MASK
+            BPM_HIPERCAM.fits -> Unavailable by now
         config/
             configuration.json   -> Configuration file.
         check_files.py           -> It determines which steps can be performed by the pipeline based on the available FITS files.
-        aligning_hcam.py   -> Aligns the science frames. 
-        astrometry_hcam.py -> Astrometrization of the science frames.
+        aligning_hcam.py   -> Aligns the science frames.
         Color_Codes.py           -> Gives color to the comments
-        DRP.py             -> Handles all the sofware and manages the frames. 
-        photometry_hcam.py -> Carries out the photometric calibration.
+        DRP.py             -> Handles all the sofware and manages the frames.
         reduction_hcam.py  -> Carries out the clean process.
 
 ## Note about the frames

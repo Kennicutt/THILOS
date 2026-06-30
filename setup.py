@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="thilos",
-    version="0.0.2",
+    version="0.0.9",
     packages=find_packages(where='.'),
     package_data={
         'THILOS    ': [
@@ -40,7 +40,9 @@ setup(
 	"matplotlib",
 	"numpy",
 	"PyYAML",
-	"sep"
+	"sep",
+    "pandas",
+    "opencv-python"
     ],
     entry_points={
         'console_scripts': [
