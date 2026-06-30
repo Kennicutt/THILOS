@@ -35,7 +35,7 @@ The generated results consist of one image per observed band. For each image, th
 - __Flat-field correction__ (including fringing correction for the Sloan z band, if applicable)
 - __Image alignment and stacking__
 
-To address cosmetic defects, a __Bad Pixel Mask (BPM)__ is applied (in the __joinup__ step), and the __LACosmic algorithm__ is used to handle cosmic ray removal.
+To address cosmetic defects, the __LACosmic algorithm__ is used to handle cosmic ray removal.
 
 ## Requirements
 

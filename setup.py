@@ -20,12 +20,12 @@ from setuptools import setup, find_packages
 
 setup(
     name="thilos",
-    version="0.0.2",
+    version="0.0.4",
     packages=find_packages(where='.'),
     package_data={
         'THILOS    ': [
             'config/configuration.json',
-            'BPM/BPM_OSIRIS_PLUS.fits'
+            'BPM/'
         ],
     },
     include_package_data=True,
