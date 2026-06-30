@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: thilos
-Version: 0.0.8
+Version: 0.0.9
 Summary: This software is designed to reduce Deep Field Imaging observations obtained with HIPERCAM.
 Home-page: https://github.com/Kennicutt/THILOS
 Author: Fabricio M. Pérez-Toledo
@@ -93,7 +93,9 @@ automatically together the :
     matplotlib>=3.10.3
     numpy>=2.3.1
     PyYAML>=6.0.2
-    sep>=1.4.1`
+    sep>=1.4.1
+    pandas>=3.0.3
+    opencv-python>=4.13.0.92
 
 ### Hardware Requirements
 - __RAM__: Minimum 4GB (higher is recommended for large datasets).

@@ -56,7 +56,9 @@ automatically together the :
     matplotlib>=3.10.3
     numpy>=2.3.1
     PyYAML>=6.0.2
-    sep>=1.4.1`
+    sep>=1.4.1
+    pandas>=3.0.3
+    opencv-python>=4.13.0.92
 
 ### Hardware Requirements
 - __RAM__: Minimum 4GB (higher is recommended for large datasets).
