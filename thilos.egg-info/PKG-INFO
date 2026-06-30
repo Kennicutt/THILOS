@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: thilos
-Version: 0.0.5
+Version: 0.0.7
 Summary: This software is designed to reduce Deep Field Imaging observations obtained with HIPERCAM.
 Home-page: https://github.com/Kennicutt/THILOS
 Author: Fabricio M. Pérez-Toledo
@@ -22,6 +22,8 @@ Requires-Dist: matplotlib
 Requires-Dist: numpy
 Requires-Dist: PyYAML
 Requires-Dist: sep
+Requires-Dist: pandas
+Requires-Dist: opencv-python
 Dynamic: author
 Dynamic: author-email
 Dynamic: classifier

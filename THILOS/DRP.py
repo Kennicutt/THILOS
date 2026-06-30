@@ -17,7 +17,7 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.0.5"
+__version__ = "0.0.7"
 __license__ = "GPL v3.0"
 
 from THILOS.check_files import *
@@ -27,7 +27,7 @@ from THILOS.alignment_hcam import *
 
 import argparse, time, os, shutil
 import os, json, warnings
-import pkg_resources
+#import pkg_resources
 from importlib.resources import files
 from pathlib import Path
 
@@ -45,10 +45,10 @@ def create_config_file_home():
     This function creates a copy of the configuration file in .config/thilos
     / for easier accessibility.
     """
-    config_path = pkg_resources.resource_filename('THILOS', 'config/configuration.json')
-    shutil.copy(config_path,Path(os.getcwd())/'configuration.json')
-    #?with files('THILOS').joinpath('config/configuration.json') as config_path:
-    #?    shutil.copy(config_path, Path(os.getcwd())/'configuration.json')
+    #config_path = pkg_resources.resource_filename('THILOS', 'config/configuration.json')
+    #shutil.copy(config_path,Path(os.getcwd())/'configuration.json')
+    with files('THILOS').joinpath('config/configuration.json') as config_path:
+        shutil.copy(config_path, Path(os.getcwd())/'configuration.json')
     logger.info(f"Configuration file created successfully in the current directory.")
     sys.exit()
 
@@ -137,9 +137,9 @@ you need to fill in the correct variable.")
     #Subsequently, the cleaned images are saved.
     logger.info(f'{bcl.OKBLUE}---------- Starting the reductions for {PRG}-{OB} ----------{bcl.ENDC}')
     
-    bpm_path = pkg_resources.resource_filename('THILOS', 'BPM/BPM_OSIRIS_PLUS.fits')
-    #?with as_file(files('THILOS').joinpath('BPM/BPM_OSIRIS_PLUS.fits')) as bpm_path:
-    #?    bpm_path_str = str(bpm_path)
+    #bpm_path = pkg_resources.resource_filename('THILOS', 'BPM/BPM_OSIRIS_PLUS.fits')
+    with as_file(files('THILOS').joinpath('BPM/BPM_OSIRIS_PLUS.fits')) as bpm_path:
+        bpm_path_str = str(bpm_path)
         
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
                 path_mask=bpm_path_str)

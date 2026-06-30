@@ -22,20 +22,6 @@
         "max_control_points": 60,
         "stacking_method": "median"
     },
-    "ASTROMETRY": {
-        "use_astrometry": false,
-        "No_Session": "",
-        "set_scale_estimate": {
-            "scale": 0.081,
-            "unknown": 10,
-            "scale_units": "arcsecperpix"
-        },
-        "radius": 0.1,
-        "downsample_factor": 2.0,
-        "use_sextractor": true,
-        "crpix_center": true,
-        "parity": 1
-    },
     "PRG": "",
     "OB": ""
 }
