@@ -103,22 +103,22 @@ First, you need to extract the frames from compressed file that you have downloa
 
 Now, you need to setup the script (it's IRAF-like command line interface) to split the frames correctly. The next example shows how to setup the script for a specific observation. You can adjust the parameters according to your needs.
 
-   $ first - first frame to process [1]: 
-   $ last - last frame to grab [0]: 
-   $ trim - do you want to trim edges of windows? [False]: 
-   $ ccd - CCD(s) to join up [0 for all] [0]: 
-   $ aper - aperture file to generate regions for ds9 ['none' to ignore] [none]: 
-   $ bias - bias frame ['none' to ignore] [none]: 
-   $ dark - dark frame ['none' to ignore] [none]: 
-   $ flat - flat frame ['none' is normal choice with no bias] [none]: 
-   $ fmap - fringe map ['none' to ignore] [<PathToFringeMap>/fmap.hcm]: (only if you want to use one) 
-   $ msub - subtract median from each window? [False]: 
-   $ ndigit - number of digits to use for frame numbers in output names [4]: (Customizable)
-   $ dtype - output data type [float32]: 
-   $ dmax - maximum allowable amount of data to write out [GB] [100.0]: (Customizable)
-   $ nmax - maximum allowable number of frames to write out [10000]: (Customizable)
-   $ compress - internal HDU compression to apply [none]: 
-   $ odir - directory for the output files [<OutputFolderPath>]: (Customizable)
+    $ first - first frame to process [1]: 
+    $ last - last frame to grab [0]: 
+    $ trim - do you want to trim edges of windows? [False]: 
+    $ ccd - CCD(s) to join up [0 for all] [0]: 
+    $ aper - aperture file to generate regions for ds9 ['none' to ignore] [none]: 
+    $ bias - bias frame ['none' to ignore] [none]: 
+    $ dark - dark frame ['none' to ignore] [none]: 
+    $ flat - flat frame ['none' is normal choice with no bias] [none]: 
+    $ fmap - fringe map ['none' to ignore] [<PathToFringeMap>/fmap.hcm]: (only if you want to use one) 
+    $ msub - subtract median from each window? [False]: 
+    $ ndigit - number of digits to use for frame numbers in output names [4]: (Customizable)
+    $ dtype - output data type [float32]: 
+    $ dmax - maximum allowable amount of data to write out [GB] [100.0]: (Customizable)
+    $ nmax - maximum allowable number of frames to write out [10000]: (Customizable)
+    $ compress - internal HDU compression to apply [none]: 
+    $ odir - directory for the output files [<OutputFolderPath>]: (Customizable)
 
     
 
