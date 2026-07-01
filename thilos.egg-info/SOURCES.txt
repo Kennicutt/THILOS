@@ -10,6 +10,8 @@ THILOS/rebinning.py
 THILOS/reduction_hcam.py
 THILOS/BPM/BPM_OSIRIS_PLUS.fits
 THILOS/config/configuration.json
+THILOS/script/__init__.py
+THILOS/script/rename_joinup_fits.py
 thilos.egg-info/PKG-INFO
 thilos.egg-info/SOURCES.txt
 thilos.egg-info/dependency_links.txt
