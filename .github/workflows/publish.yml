@@ -1,0 +1,29 @@
+name: Publish Python Package
+
+on:
+  release:
+    types: [created]  # Triggers when you create a new Release on GitHub
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Highly recommended to specify an environment for extra security
+    environment: pypi
+    permissions:
+      # Required for Trusted Publishing
+      id-token: write  
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build
+    - name: Build package
+      run: python -m build
+    - name: Publish package to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      # No username/password needed – Trusted Publishing is used automatically
