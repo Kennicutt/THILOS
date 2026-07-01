@@ -17,7 +17,7 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 __license__ = "GPL v3.0"
 
 from THILOS.check_files import *
