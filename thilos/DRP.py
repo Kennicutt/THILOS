@@ -17,7 +17,7 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.1.5"
+__version__ = "0.1.6"
 __license__ = "GPL v3.0"
 
 import thilos
@@ -146,10 +146,10 @@ you need to fill in the correct variable.")
     # Load the BPM files for each CCD concerning the binning value.
     list_bpms = []
     for ccd in range(1, 6):
-        bpm_file = f"BPM/HCAM_BPM_CCD{ccd}_bin{binning}.fits"
+        bpm_file = f"HCAM_BPM_CCD{ccd}_bin{binning}.fits"
         #with as_file(files("THILOS").joinpath(bpm_file)) as bpm_path:
         #with files("THILOS").joinpath(bpm_file) as bpm_path:  # type: ignore
-        bpm_path = files(thilos) / bpm_file
+        bpm_path = Path(conf['DIRECTORIES']['PATH_BPMs']) / bpm_file
         list_bpms.append(str(bpm_path))
         
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],

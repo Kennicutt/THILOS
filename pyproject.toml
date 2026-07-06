@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "thilos"
-version = "0.1.5"
+version = "0.1.6"
 authors = [
     {name = "Fabricio M. Pérez-Toledo", email = "fabricio.perez@gtc.iac.es"},
 ]
@@ -49,8 +49,7 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 thilos = [
-    "config/configuration.json",
-    "BPM/*.fits"
+    "config/configuration.json"
 ]
 
 # ========== FIND PACKAGES ==========
