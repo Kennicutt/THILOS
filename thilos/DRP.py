@@ -17,14 +17,14 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __license__ = "GPL v3.0"
 
 import thilos
 from thilos.check_files import *
 from thilos.reduction_hcam import *
 from thilos.alignment_hcam import *
-#from THILOS.astrometry_hcam import * FUTURE TOOL
+#from thilos.astrometry_hcam import * FUTURE TOOL
 
 import argparse, time, os, shutil, sys
 import json, warnings

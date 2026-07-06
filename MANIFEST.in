@@ -1,0 +1,4 @@
+# Excluye archivos FITS
+recursive-exclude BPM/ *.fits
+recursive-exclude *.fits
+global-exclude *.fits

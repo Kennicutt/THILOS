@@ -1,4 +1,5 @@
 LICENSE
+MANIFEST.in
 README.md
 pyproject.toml
 thilos/Color_Codes.py
@@ -14,16 +15,6 @@ thilos.egg-info/dependency_links.txt
 thilos.egg-info/entry_points.txt
 thilos.egg-info/requires.txt
 thilos.egg-info/top_level.txt
-thilos/BPM/HCAM_BPM_CCD1_bin1.fits
-thilos/BPM/HCAM_BPM_CCD1_bin2.fits
-thilos/BPM/HCAM_BPM_CCD2_bin1.fits
-thilos/BPM/HCAM_BPM_CCD2_bin2.fits
-thilos/BPM/HCAM_BPM_CCD3_bin1.fits
-thilos/BPM/HCAM_BPM_CCD3_bin2.fits
-thilos/BPM/HCAM_BPM_CCD4_bin1.fits
-thilos/BPM/HCAM_BPM_CCD4_bin2.fits
-thilos/BPM/HCAM_BPM_CCD5_bin1.fits
-thilos/BPM/HCAM_BPM_CCD5_bin2.fits
 thilos/config/configuration.json
 thilos/script/__init__.py
 thilos/script/directional_polynomial_inpaint.py
