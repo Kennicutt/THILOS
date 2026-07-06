@@ -41,14 +41,14 @@ Homepage = "https://github.com/Kennicutt/THILOS"
 
 # ========== CONSOLE SCRIPT ==========
 [project.scripts]
-thilos = "THILOS.DRP:run"
+thilos = "thilos.DRP:run"
 
 # ========== PACKAGE DATA ==========
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.package-data]
-THILOS = [
+thilos = [
     "config/configuration.json",
     "BPM/*.fits"
 ]
@@ -56,4 +56,4 @@ THILOS = [
 # ========== FIND PACKAGES ==========
 [tool.setuptools.packages.find]
 where = ["."]   # same as packages=find_packages(where='.')
-include = ["THILOS*"]
+include = ["thilos*"]
