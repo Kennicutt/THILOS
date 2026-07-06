@@ -17,12 +17,13 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __license__ = "GPL v3.0"
 
-from THILOS.check_files import *
-from THILOS.reduction_hcam import *
-from THILOS.alignment_hcam import *
+import thilos
+from thilos.check_files import *
+from thilos.reduction_hcam import *
+from thilos.alignment_hcam import *
 #from THILOS.astrometry_hcam import * FUTURE TOOL
 
 import argparse, time, os, shutil, sys
@@ -30,7 +31,7 @@ import json, warnings
 from importlib.resources import files
 from pathlib import Path
 
-from THILOS.Color_Codes import bcolors as bcl
+from thilos.Color_Codes import bcolors as bcl
 from loguru import logger
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -44,7 +45,7 @@ def create_config_file_home():
     This function creates a copy of the configuration file in .config/thilos
     / for easier accessibility.
     """
-    with files('THILOS').joinpath('config/configuration.json') as config_path:
+    with files('THILOS').joinpath('config/configuration.json') as config_path: # type: ignore
         shutil.copy(config_path, Path(os.getcwd())/'configuration.json')
     logger.info(f"Configuration file created successfully in the current directory.")
     sys.exit()
@@ -146,8 +147,10 @@ you need to fill in the correct variable.")
     list_bpms = []
     for ccd in range(1, 6):
         bpm_file = f"BPM/HCAM_BPM_CCD{ccd}_bin{binning}.fits"
-        with as_file(files("THILOS").joinpath(bpm_file)) as bpm_path:
-            list_bpms.append(str(bpm_path))
+        #with as_file(files("THILOS").joinpath(bpm_file)) as bpm_path:
+        #with files("THILOS").joinpath(bpm_file) as bpm_path:  # type: ignore
+        bpm_path = files(THILOS) / bpm_file
+        list_bpms.append(str(bpm_path))
         
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
                 path_mask=list_bpms)

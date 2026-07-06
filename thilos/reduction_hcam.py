@@ -31,10 +31,10 @@ import yaml as py
 from lacosmic.core import lacosmic # type: ignore
 import sep # type: ignore
 
-from THILOS.Color_Codes import bcolors as bcl
-from THILOS.rebinning import * # type: ignore
-from THILOS.script.directional_polynomial_inpaint import directional_polynomial_inpaint
-from THILOS.script.fringe_mask import create_fringe_mask
+from thilos.Color_Codes import bcolors as bcl
+from thilos.rebinning import * # type: ignore
+from thilos.script.directional_polynomial_inpaint import directional_polynomial_inpaint
+from thilos.script.fringe_mask import create_fringe_mask
 from loguru import logger # type: ignore
 
 import logging, inspect

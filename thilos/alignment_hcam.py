@@ -30,7 +30,7 @@ from typing import List, Tuple, Optional, Union
 from loguru import logger
 import warnings
 
-from THILOS.Color_Codes import bcolors as bcl
+from thilos.Color_Codes import bcolors as bcl
 
 import logging, inspect
 
