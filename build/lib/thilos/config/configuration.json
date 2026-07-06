@@ -1,0 +1,30 @@
+{
+    "DIRECTORIES": {
+        "PATH": "",
+        "PATH_DATA": "",
+        "PATH_OUTPUT": ""
+    },
+    "REDUCTION": {
+        "binning": 2,
+        "apply_BPM": true,
+        "use_BIAS": true,
+        "use_FLAT": true,
+        "use_STD": true,
+        "no_CRs": false,
+        "contrast": 1.5,
+        "cr_threshold": 5.0,
+        "neighbor_threshold": 5.0,
+        "save_std": true,
+        "save_sky": true,
+        "save_not_sky": false,
+        "save_fringing": false,
+        "save_illumination_correction": true
+    },
+    "ALIGNING": {
+        "use_aligning": true,
+        "max_control_points": 60,
+        "stacking_method": "sum"
+    },
+    "PRG": "",
+    "OB": ""
+}

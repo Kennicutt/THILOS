@@ -45,7 +45,7 @@ def create_config_file_home():
     This function creates a copy of the configuration file in .config/thilos
     / for easier accessibility.
     """
-    with files('thilos').joinpath('config/configuration.json') as config_path: # type: ignore
+    with files('THILOS').joinpath('config/configuration.json') as config_path: # type: ignore
         shutil.copy(config_path, Path(os.getcwd())/'configuration.json')
     logger.info(f"Configuration file created successfully in the current directory.")
     sys.exit()
@@ -66,7 +66,7 @@ def run(path_config: str = None):
     """
     # Parse configuration
     parser = argparse.ArgumentParser(
-                         prog = 'thilos',
+                         prog = 'THILOS',
                          description = 'This software reduces observations taken with HIPERCAM\
                             in Deep Field mode. It can process any filter configuration and is suitable\
                             for observations affected by fringing (Sloan_z).')
@@ -149,7 +149,7 @@ you need to fill in the correct variable.")
         bpm_file = f"BPM/HCAM_BPM_CCD{ccd}_bin{binning}.fits"
         #with as_file(files("THILOS").joinpath(bpm_file)) as bpm_path:
         #with files("THILOS").joinpath(bpm_file) as bpm_path:  # type: ignore
-        bpm_path = files(thilos) / bpm_file
+        bpm_path = files(THILOS) / bpm_file
         list_bpms.append(str(bpm_path))
         
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
