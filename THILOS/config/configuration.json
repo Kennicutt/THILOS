@@ -5,6 +5,8 @@
         "PATH_OUTPUT": ""
     },
     "REDUCTION": {
+        "binning": 2,
+        "apply_BPM": true,
         "use_BIAS": true,
         "use_FLAT": true,
         "use_STD": true,
@@ -15,12 +17,13 @@
         "save_std": true,
         "save_sky": true,
         "save_not_sky": false,
-        "save_fringing": false
+        "save_fringing": false,
+        "save_illumination_correction": true
     },
     "ALIGNING": {
         "use_aligning": true,
         "max_control_points": 60,
-        "stacking_method": "median"
+        "stacking_method": "sum"
     },
     "PRG": "",
     "OB": ""

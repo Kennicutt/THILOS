@@ -17,7 +17,7 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __license__ = "GPL v3.0"
 
 from THILOS.check_files import *
@@ -134,11 +134,23 @@ you need to fill in the correct variable.")
     #Subsequently, the cleaned images are saved.
     logger.info(f'{bcl.OKBLUE}---------- Starting the reductions for {PRG}-{OB} ----------{bcl.ENDC}')
     
-    with as_file(files('THILOS').joinpath('BPM/BPM_OSIRIS_PLUS.fits')) as bpm_path:
-        bpm_path_str = str(bpm_path)
+    #Read the binning value from the configuration file.
+    binning = conf['REDUCTION']['binning']
+
+    # Is it valid?
+    if binning not in [1, 2, 3, 4]:
+        logger.error(f'{bcl.FAIL}The binning value is not valid. Please check the configuration file{bcl.ENDC}')
+        sys.exit()
+
+    # Load the BPM files for each CCD concerning the binning value.
+    list_bpms = []
+    for ccd in range(1, 6):
+        bpm_file = f"BPM/HCAM_BPM_CCD{ccd}_bin{binning}.fits"
+        with as_file(files("THILOS").joinpath(bpm_file)) as bpm_path:
+            list_bpms.append(str(bpm_path))
         
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
-                path_mask=bpm_path_str)
+                path_mask=list_bpms)
     o.get_imagetypes()
     o.load_BPM()
     o.check_binning()
@@ -159,14 +171,16 @@ you need to fill in the correct variable.")
     if conf['REDUCTION']['use_STD']:
         o.get_std(no_CRs=conf['REDUCTION']['no_CRs'], contrast_arg = conf['REDUCTION']['contrast'],
             cr_threshold_arg = conf['REDUCTION']['cr_threshold'],
-            neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'])
+            neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'],
+            apply_BPM=conf['REDUCTION']['apply_BPM'])
 
     else:
         logger.warning(f'{bcl.WARNING}The STD star is not going to be reduced{bcl.ENDC}')
     
     o.get_target(no_CRs=conf['REDUCTION']['no_CRs'], contrast_arg = conf['REDUCTION']['contrast'],
             cr_threshold_arg = conf['REDUCTION']['cr_threshold'],
-            neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'])
+            neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'],
+            apply_BPM=conf['REDUCTION']['apply_BPM'])
     
     
     if conf['REDUCTION']['save_fringing']:
@@ -174,6 +188,10 @@ you need to fill in the correct variable.")
         logger.info(f'{bcl.OKGREEN}Fringing correction applied successfully{bcl.ENDC}')
     else:
         logger.warning(f'{bcl.WARNING}The fringing correction is not going to be executed{bcl.ENDC}')
+
+    if conf['REDUCTION']['save_illumination_correction']:
+        o.illumination_correction()
+        logger.info(f'{bcl.OKGREEN}Illumination correction applied successfully{bcl.ENDC}')
 
     if conf['REDUCTION']['save_not_sky']:    
         o.sustract_sky()
@@ -186,6 +204,7 @@ you need to fill in the correct variable.")
     o.save_target(sky=conf['REDUCTION']['save_sky'])
     o.save_target(fringing=conf['REDUCTION']['save_fringing'])    
     o.save_target(not_sky=conf['REDUCTION']['save_not_sky'])
+    o.save_target(illumination=conf['REDUCTION']['save_illumination_correction'])
     logger.info(f'{bcl.OKBLUE}-------------- End of the reductions successfully --------------{bcl.ENDC}')
     print(2*"\n")
 

@@ -11,3 +11,4 @@ PyYAML
 sep
 pandas
 opencv-python
+photutils
