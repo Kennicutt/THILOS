@@ -1,2 +1,2 @@
 [console_scripts]
-thilos = THILOS.DRP:run
+thilos = thilos.DRP:run
