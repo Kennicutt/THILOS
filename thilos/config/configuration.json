@@ -2,7 +2,8 @@
     "DIRECTORIES": {
         "PATH": "",
         "PATH_DATA": "",
-        "PATH_OUTPUT": ""
+        "PATH_OUTPUT": "",
+        "PATH_BPMs": ""
     },
     "REDUCTION": {
         "binning": 2,
