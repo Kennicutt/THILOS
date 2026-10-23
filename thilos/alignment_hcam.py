@@ -41,7 +41,6 @@ kernel = np.array([[1., 2., 3., 2., 1.],
                    [3., 5., 8., 5., 3.],
                    [2., 3., 5., 3., 2.],
                    [1., 2., 3., 2., 1.]])
-#?kernel = np.ascontiguousarray(kernel) #!
 visualize = False
 #Define functions
 

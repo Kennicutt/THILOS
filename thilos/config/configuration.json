@@ -3,9 +3,11 @@
         "PATH": "",
         "PATH_DATA": "",
         "PATH_OUTPUT": "",
-        "PATH_BPMs": ""
+        "PATH_BPMs": "",
+        "PATH_FRINGE": ""
     },
     "REDUCTION": {
+        "use_reduction": true,
         "binning": 2,
         "apply_BPM": true,
         "use_BIAS": true,
@@ -18,13 +20,15 @@
         "save_std": true,
         "save_sky": true,
         "save_not_sky": false,
-        "save_fringing": false,
+        "dithering": true,
+        "defringing": false,
         "save_illumination_correction": true
     },
     "ALIGNING": {
         "use_aligning": true,
         "max_control_points": 60,
-        "stacking_method": "sum"
+        "stacking_method": "sum",
+        "defringing_stacked": true
     },
     "PRG": "",
     "OB": ""
