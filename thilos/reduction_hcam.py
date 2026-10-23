@@ -34,7 +34,7 @@ import sep # type: ignore
 from thilos.Color_Codes import bcolors as bcl
 from thilos.rebinning import * # type: ignore
 from thilos.script.directional_polynomial_inpaint import directional_polynomial_inpaint
-from thilos.script.fringe_mask import create_fringe_mask
+from thilos.script.fringe_mask import create_fringe_mask, defringe_no_dithering, defringe_with_dithering, create_mask_from_science, illu_corr
 from loguru import logger # type: ignore
 
 import logging, inspect
@@ -154,12 +154,16 @@ class Reduction:
             logger.info(f"{bcl.OKGREEN}Directory to reduced files has been created{bcl.ENDC}")
 
         # Define the path to mask file
-        self.path_mask = [Path(p) for p in path_mask]
-        if all(os.path.exists(path) for path in self.path_mask):
-            logger.info("Paths to mask files exist")
+        if path_mask is not None:
+            self.path_mask = [Path(p) for p in path_mask]
+            if all(os.path.exists(path) for path in self.path_mask):
+                logger.info("Paths to mask files exist")
+            else:
+                logger.critical(f"{bcl.ERROR}One or more paths to mask files do NOT exist{bcl.ENDC}")
+                sys.exit()
         else:
-            logger.critical(f"{bcl.ERROR}One or more paths to mask files do NOT exist{bcl.ENDC}")
-            sys.exit()
+            self.path_mask = None
+            logger.warning(f"{bcl.WARNING}No BPM files will be applied{bcl.ENDC}")
         
         # The information about the frames in that directory is gathered.
         self.ic = ccdp.ImageFileCollection(self.PATH)
@@ -169,8 +173,12 @@ class Reduction:
             logger.critical("NOT files to reduce")
             sys.exit()
 
-        # Define dictionaries
+        # Define dictxionaries
         self.DATA_DICT={}
+        self.dict_sky = {
+                'YES': 'SKY',
+                'NO': 'NOSKY'
+            }
         self.key_dict={'flat':'SkyFlat',
                        'target': 'Imaging',
                        'std': 'STD',
@@ -245,6 +253,35 @@ class Reduction:
         cube.sort(axis=0)
         logger.info("Combining frames to create master frame.")
         return np.nanmedian(cube[1:-1,:,:], axis=0)
+
+    @staticmethod
+    def filter_saturated_frames(lst_frames: List[np.ndarray], filter: str, pct: float = 10.0) -> List[np.ndarray]:
+        """
+        This static method filters out saturated frames from a list of images based on a specified filter.
+
+        Args:
+            lst_frames (list): List of images to be filtered.
+            filter (str): The filter used for the images, which determines the saturation threshold.
+            pct (float): The percentage of pixels to consider for saturation filtering.
+        Returns:
+            list: A list of images that are not saturated.
+        """
+        saturation_thresholds = {
+            'Sloan_u': (4000, 55000),
+            'Sloan_g': (4000, 50000),
+            'Sloan_r': (4000, 50000),
+            'Sloan_i': (4000, 50000),
+            'Sloan_z': (4000, 42000)
+        }
+
+        if filter not in saturation_thresholds:
+            logger.warning(f"Filter {filter} not recognized. No saturation filtering applied.")
+            return lst_frames
+        else:
+            lower_threshold, upper_threshold = saturation_thresholds[filter]
+            filtered_frames = [frame for frame in lst_frames if np.nanpercentile(frame, (100 - pct/2)) < upper_threshold and np.nanpercentile(frame, pct/2) > lower_threshold]
+            logger.info(f"Filtered out {len(lst_frames) - len(filtered_frames)} saturated frames for filter {filter}.")
+            return filtered_frames
 
 
 
@@ -423,10 +460,12 @@ class Reduction:
         for i, key in enumerate(lst_bias, start=1):
             __, filt = key.split('+')
             bias = self.get_each_data(self.DATA_DICT, key)
-            self.masterbias = self.combining(bias) * getattr(self, f"MASK{i}")
+            if self.path_mask is not None:
+                self.masterbias = self.combining(bias) * getattr(self, f"MASK{i}")
+            else:
+                self.masterbias = self.combining(bias)
             self.master_dict[key] = self.masterbias
-
-        logger.info(f"{bcl.OKGREEN}Masterbias has been created for {filt}{bcl.ENDC}")
+            logger.info(f"{bcl.OKGREEN}Masterbias has been created for {filt}{bcl.ENDC}")
 
 
 
@@ -441,7 +480,7 @@ class Reduction:
             if 'flat+OPEN' in key:
                 continue
             flat = self.sustractMasterBias(key, self.master_dict['bias+'+filt], self.DATA_DICT)
-            combflat = self.combining(flat)
+            combflat = self.combining(self.filter_saturated_frames(flat, filt, pct=10.0))
             median = np.nanmedian(combflat)
             masterflat = combflat/median
             self.master_dict[key] = masterflat
@@ -554,35 +593,6 @@ class Reduction:
             self.target_dict[elem] = lst_tg
 
 
-
-
-#    def remove_fringing(self):
-#        """
-#        This method performs a special cleaning when using Sloan_z to remove the interference pattern.
-#        """
-#        lst_results = [elem for elem in list(self.DATA_DICT.keys())]
-#        if 'data+Sloan_z' in lst_results:
-#            logger.info("Removing the fringe on Sloan z filter.")
-#            fringe= self.target_dict['data+Sloan_z']
-#            combfringe = self.combining(fringe)
-#            median = np.nanmedian(combfringe)
-#            masterfringe = combfringe/median
-#            fr_free = [elem/masterfringe for elem in fringe]
-#            self.target_dict['fringe+Sloan_z'] = fr_free
-#            logger.info("Sci frames with free fringe.")
-#            try:
-#                fringe_std = self.std_dict['std+Sloan_z']
-#                fr_free_std = [elem/masterfringe for elem in fringe_std]
-#                self.std_dict['fringe+Sloan_z'] = fr_free_std
-#                logger.info("STD frame/s with free fringe.")
-#            except Exception as e:
-#                logger.warning(f"There are no photometric calibration frames with Sloan z filter: {e}")
-#                self.std_dict['fringe+Sloan_z'] = []
-#        else:
-#            logger.warning(f"There are no science frames with Sloan z filter to remove the fringe")
-#            self.target_dict['fringe+Sloan_z'] = []
-#            self.std_dict['fringe+Sloan_z'] = []
-
     @staticmethod
     def get_masterfringe(lst_frames: List[np.ndarray]) -> np.ndarray:
         """
@@ -592,54 +602,105 @@ class Reduction:
         Args:
             lst_frames (list): List of images to be averaged.
         """
-        __, __, individual_masks = create_fringe_mask(lst_frames, edge_mask_width=1)
+        fringe_map, __, individual_masks = create_fringe_mask(lst_frames, edge_mask_width=1,
+                                                              method='median')
 
-        #Make the illumination correction for each frame
-        lst_out_illumination = []
-        for i, frame in enumerate(lst_frames):
-            bkg = sep.Background(frame, mask=individual_masks[i], bw=64, bh=64, fw=3, fh=3)
-            lst_out_illumination.append(frame/(bkg.back()/np.nanmedian(bkg.back())))
-        
-        #Get the background of the illumination corrected frames
-        lst_bkg_illu_ok = []
-        for i, frame in enumerate(lst_out_illumination):
-            n_bkg = sep.Background(frame, mask=individual_masks[i], bw=64, bh=64, fw=3, fh=3)
-            lst_bkg_illu_ok.append(n_bkg.back())
-        
-        #Get the fringe map for each frame
-        fringe_maps = []
-        for i, frame in enumerate(lst_frames):
-            MASK = get_mask(individual_masks[i]) #Masking the stars
-            masked_frame = (frame - lst_bkg_illu_ok[i]) * MASK
-            fringe_maps.append(np.nan_to_num(masked_frame, nan=np.nanmedian(masked_frame)))
-
-        return np.nanmedian(fringe_maps, axis=0)
+        return fringe_map
         
 
-    def remove_fringing(self):
+    def remove_fringing_dithering(self):
         """
-        This method performs a special cleaning when using Sloan_z to remove the interference pattern.
+        This method performs a special cleaning when using Sloan_z and/or Sloan_i to remove the interference pattern.
+        This method is valid when the dithering technique is used.
         """
         lst_results = [elem for elem in list(self.DATA_DICT.keys())]
         if 'data+Sloan_z' in lst_results:
             logger.info("Removing the fringe on Sloan z filter.")
             fringe= self.target_dict['data+Sloan_z']
-            masterfringe = self.get_masterfringe(fringe)
-            fr_free = [elem - masterfringe for elem in fringe]
+            masterfringe_z = defringe_with_dithering(fringe)
+            fr_free = [elem - masterfringe_z for elem in fringe]
             self.target_dict['fringe+Sloan_z'] = fr_free
             logger.info("Sci frames with free fringe.")
             try:
                 fringe_std = self.std_dict['std+Sloan_z']
-                fr_free_std = [elem - masterfringe for elem in fringe_std]
+                masterfringe_z_std = defringe_with_dithering(fringe_std)
+                fr_free_std = [elem - masterfringe_z_std for elem in fringe_std]
                 self.std_dict['fringe+Sloan_z'] = fr_free_std
                 logger.info("STD frame/s with free fringe.")
             except Exception as e:
                 logger.warning(f"There are no photometric calibration frames with Sloan z filter: {e}")
                 self.std_dict['fringe+Sloan_z'] = []
+
+        elif 'data+Sloan_i' in lst_results:
+            logger.info("Removing the fringe on Sloan i filter.")
+            fringe= self.target_dict['data+Sloan_i']
+            masterfringe_i = defringe_with_dithering(fringe)
+            fr_free = [elem - masterfringe_i for elem in fringe]
+            self.target_dict['fringe+Sloan_i'] = fr_free
+            logger.info("Sci frames with free fringe.")
+            try:
+                fringe_std = self.std_dict['std+Sloan_i']
+                masterfringe_i_std = defringe_with_dithering(fringe_std)
+                fr_free_std = [elem - masterfringe_i_std for elem in fringe_std]
+                self.std_dict['fringe+Sloan_i'] = fr_free_std
+                logger.info("STD frame/s with free fringe.")
+            except Exception as e:
+                logger.warning(f"There are no photometric calibration frames with Sloan i filter: {e}")
+                self.std_dict['fringe+Sloan_i'] = []
         else:
             logger.warning(f"There are no science frames with Sloan z filter to remove the fringe")
             self.target_dict['fringe+Sloan_z'] = []
             self.std_dict['fringe+Sloan_z'] = []
+            logger.warning(f"There are no science frames with Sloan i filter to remove the fringe")
+            self.target_dict['fringe+Sloan_i'] = []
+            self.std_dict['fringe+Sloan_i'] = []
+
+    def remove_fringing_no_dithering(self, path_fringe: str = None, binning: int = 2):
+            """
+            This method performs a special cleaning when using Sloan_z and/or Sloan_i to remove the interference pattern.
+            This method is valid when the NO DITHERING technique is used.
+            """
+            lst_results = [elem for elem in list(self.DATA_DICT.keys())]
+            if 'data+Sloan_z' in lst_results:
+                filt = 'Sloan_z'
+                logger.info("Removing the fringe on Sloan z filter.")
+                fringe= self.target_dict['data+Sloan_z']
+                masterfringe_z = fits.getdata(Path(path_fringe) / f"FRINGE_MAP_{filt}_{binning}x{binning}.fits")
+                fr_free = [defringe_no_dithering(illu_corr(elem), masterfringe_z) for elem in fringe]
+                self.target_dict['fringe+Sloan_z'] = [elem['result'] for elem in fr_free]
+                logger.info("Sci frames with free fringe.")
+                try:
+                    fringe_std = self.std_dict['std+Sloan_z']
+                    fr_free_std = [defringe_no_dithering(illu_corr(elem), masterfringe_z) for elem in fringe_std]
+                    self.std_dict['fringe+Sloan_z'] = [elem['result'] for elem in fr_free_std]
+                    logger.info("STD frame/s with free fringe.")
+                except Exception as e:
+                    logger.warning(f"There are no photometric calibration frames with Sloan z filter: {e}")
+                    self.std_dict['fringe+Sloan_z'] = []
+    
+            elif 'data+Sloan_i' in lst_results:
+                filt = 'Sloan_i'
+                logger.info("Removing the fringe on Sloan i filter.")
+                fringe= self.target_dict['data+Sloan_i']
+                masterfringe_i = fits.getdata(Path(path_fringe) / f"FRINGE_MAP_{filt}_{binning}x{binning}.fits")
+                fr_free = [defringe_no_dithering(illu_corr(elem), masterfringe_i) for elem in fringe]
+                self.target_dict['fringe+Sloan_i'] = [elem['result'] for elem in fr_free]
+                logger.info("Sci frames with free fringe.")
+                try:
+                    fringe_std = self.std_dict['std+Sloan_i']
+                    fr_free_std = [defringe_no_dithering(illu_corr(elem), masterfringe_i) for elem in fringe_std]
+                    self.std_dict['fringe+Sloan_i'] = [elem['result'] for elem in fr_free_std]
+                    logger.info("STD frame/s with free fringe.")
+                except Exception as e:
+                    logger.warning(f"There are no photometric calibration frames with Sloan i filter: {e}")
+                    self.std_dict['fringe+Sloan_i'] = []
+            else:
+                logger.warning(f"There are no science frames with Sloan z filter to remove the fringe")
+                self.target_dict['fringe+Sloan_z'] = []
+                self.std_dict['fringe+Sloan_z'] = []
+                logger.warning(f"There are no science frames with Sloan i filter to remove the fringe")
+                self.target_dict['fringe+Sloan_i'] = []
+                self.std_dict['fringe+Sloan_i'] = []
 
     def illumination_correction(self):
         """
@@ -660,7 +721,6 @@ class Reduction:
                 lst_target = self.target_dict[value]
                 __, __, individual_masks = create_fringe_mask(lst_target, edge_mask_width=1)
         
-                #Make the illumination correction for each frame
                 lst_out_illumination = []
                 for i, frame in enumerate(lst_target):
                     bkg = sep.Background(frame, mask=individual_masks[i],
@@ -692,7 +752,7 @@ class Reduction:
             no_sky = []
             for fr in lst_frames:
                 no_sky.append(fr-self.bkg)
-            self.target_dict['sky+' + value] = no_sky
+            self.target_dict['nosky+' + value] = no_sky
             if key == 'std': #This is a special case for the STD stars.
                 logger.info(f"List of photometric calibration frames without sky for {value} created.")
             elif key == 'data':
@@ -731,70 +791,80 @@ class Reduction:
             fnames = self.DATA_DICT[key]
 
             if key == 'data+Sloan_z' and fringing and not illumination:
-                FRINGING = 'NO'
-                illumination_corr = 'NO'
-                sky_status = 'SKY'
+                FRINGING = 'YES' #Fringing removed?
+                illumination_corr = 'NO' #Illumination correction applied?
+                sky_status = 'YES' #Does it have sky?
                 status='REDUCED'
                 imagetype='SCIENCE'
                 filt = key.split('+')[1]
                 target = self.target_dict['fringe+Sloan_z']
                 logger.info("Science frames without fringing.")
             elif std and not fringing:
-                FRINGING = 'YES'
+                FRINGING = 'NO'
                 illumination_corr = 'NO' 
-                sky_status = 'SKY'
+                sky_status = 'YES'
                 status='REDUCED'
                 imagetype='STD'
                 filt = key.split('+')[1]
                 target= self.std_dict[key]
                 logger.info("Photometric calibration frames.")
             elif (key == 'std+Sloan_z' and fringing and std):
-                FRINGING = 'NO'
+                FRINGING = 'YES'
                 illumination_corr = 'NO'
-                sky_status = 'SKY'
+                sky_status = 'YES'
                 status='REDUCED'
                 imagetype='STD'
                 filt = key.split('+')[1]
                 target = self.std_dict['fringe+Sloan_z']
                 logger.info("Photometric calibration frames without fringing.")
             elif sky and not fringing and not illumination:
-                FRINGING = 'YES'
+                FRINGING = 'NO'
                 illumination_corr = 'NO'
-                sky_status = 'SKY'
+                sky_status = 'YES'
                 status='REDUCED'
                 imagetype='SCIENCE'
                 filt = key.split('+')[1]
                 target= self.target_dict[key]
                 logger.info("Science frames WITH sky")
             elif not_sky and not fringing:
+                FRINGING = 'NO'
+                illumination_corr = 'NO'
+                sky_status = 'NO'
+                status='REDUCED'
+                imagetype='SCIENCE'
+                filt = key.split('+')[1]
+                target= self.target_dict['nosky+'+ filt]
+                logger.info("Science frames WITHOUT sky")
+            elif not_sky and fringing:
                 FRINGING = 'YES'
                 illumination_corr = 'NO'
-                sky_status = 'NOSKY'
+                sky_status = 'NO'
                 status='REDUCED'
                 imagetype='SCIENCE'
                 filt = key.split('+')[1]
-                target= self.target_dict['sky+'+ filt]
-                logger.info("Science frames WITHOUT sky")
-            elif illumination and key != 'fringe+Sloan_z' and sky:
-                FRINGING = 'YES'
-                illumination_corr = 'YES'
-                sky_status = 'SKY'
-                status='REDUCED'
-                imagetype='SCIENCE'
-                filt = key.split('+')[1]
-                if filt != 'Sloan_z':
-                    target= self.target_dict['illu+'+ filt]
-                else:
-                    continue
-                logger.info("Science frames WITH illumination correction")
-            elif illumination and key == 'fringe+Sloan_z' and sky:
+                target= self.target_dict['nosky+'+ filt]
+                logger.info("Science frames WITHOUT sky & NO fringe")
+            elif illumination and not fringing and sky:
                 FRINGING = 'NO'
                 illumination_corr = 'YES'
-                sky_status = 'SKY'
+                sky_status = 'YES'
                 status='REDUCED'
                 imagetype='SCIENCE'
                 filt = key.split('+')[1]
+                #if filt != 'Sloan_z':
                 target= self.target_dict['illu+'+ filt]
+                logger.info("Science frames WITH illumination correction")
+            elif illumination and fringing and sky:
+                FRINGING = 'YES'
+                illumination_corr = 'YES'
+                sky_status = 'YES'
+                status='REDUCED'
+                imagetype='SCIENCE'
+                filt = key.split('+')[1]
+                if filt == 'Sloan_z':
+                    target = self.target_dict['fringe+Sloan_z']
+                else:
+                    target= self.target_dict['illu+'+ filt]
                 logger.info("Science frames WITH illumination correction")
             else:
                 continue
@@ -805,6 +875,7 @@ class Reduction:
                 hd = fits.open(fnames[i])[0].header
                 hd_wcs = wcs.WCS(fits.open(fnames[i])[0].header).to_header()
                 hd['FRINGE'] = FRINGING
+                hd['ILLUCORR'] = illumination_corr
                 hd['imgtype'] = imagetype
                 hd['STATUS'] = status
                 hd['SSKY'] = sky_status
@@ -817,8 +888,8 @@ class Reduction:
                 filename = os.path.basename(fnames[i])
                 raw_name , __ = filename.split('.')
 
-                logger.info(f"{bcl.OKGREEN}Storing the frame: ADP_{raw_name}_{imagetype}_{sky_status}_{filt} for {filt}{bcl.ENDC}")
-                hdul.writeto(str(self.PATH_RESULTS / f'ADP_{raw_name}_{imagetype}_{sky_status}_{filt}.fits'),
+                logger.info(f"{bcl.OKGREEN}Storing the frame: ADP_{raw_name}_{imagetype}_{self.dict_sky[sky_status]}_{filt} for {filt}{bcl.ENDC}")
+                hdul.writeto(str(self.PATH_RESULTS / f'ADP_{raw_name}_{imagetype}_{self.dict_sky[sky_status]}_{filt}.fits'),
                             overwrite=True)
 
 
@@ -836,7 +907,7 @@ class Reduction:
                 logger.critical(f"{bcl.ERROR}Images have different binning in X and Y axes. No support for this case.{bcl.ENDC}")
                 sys.exit()
             else:
-                factor = int(list(xbin)[0])
+                factor = int(list(xbin)[-1]) #To select the largest binning factor
                 self.binning = factor
 
                 #Check if there are flats with new binning previously applied
@@ -852,7 +923,7 @@ class Reduction:
                         name, formato = os.path.basename(flat_path).split('.')
                         path_save = os.path.dirname(flat_path) 
                         __, __ = reduce_binning(flat_path, factor,
-                                                save_as=path_save+'/'+name+'_bin2.'+formato)
+                                                save_as=path_save+'/'+name+f'_bin{factor}.'+formato)
                         logger.info(f"Flat frame {name} rebinned and saved.")
                     self.ic = ccdp.ImageFileCollection(self.PATH)
 

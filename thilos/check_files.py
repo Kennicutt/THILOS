@@ -17,7 +17,6 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 import json, os
-#!import pkg_resources
 from importlib.resources import as_file, files
 import ccdproc as ccdp
 from pathlib import Path
@@ -99,16 +98,12 @@ def readJSON() -> json:
         logger.info('Configuration file found in the current working directory.')
         return json.load(open(Path(os.getcwd())/'configuration.json'))
     else:
-        #!config_path = pkg_resources.resource_filename(
-        #!    'THILOS', 'config/configuration.json')
         with as_file(files('THILOS').joinpath('config/configuration.json')) as config_path:
             # config_path es un Path object temporal
             with open(config_path, 'r') as f:
                 config = json.load(f)
                 logger.info(f'Configuration file not found in the current working directory. Reading from {config_path}')
                 return config
-        #!logger.info(f'Configuration file not found in the current working directory. Reading from {config_path}')
-        #!return json.load(open(config_path))
 
 
 def update_config(config_path: str, config: Dict) -> Dict:
@@ -174,16 +169,14 @@ def check_files(path_config: str = None) -> json:
         json: The updated configuration dictionary.
     """
     conf = readJSON()
-    #!conf = read_config(path_config + 'configuration.json') #---> Temporal HAY QUE USAR EL readJSON() ORIGINAL
     directory = Path(os.getcwd())/'raw'
-    #!directory = path_config +'raw'  #---> Temporal HAY QUE USAR EL os.getcwd() ORIGINAL
 
     ic = ccdp.ImageFileCollection(directory, keywords=['GTCPRGID','GTCOBID','OBSMODE','OBJECT','FILTER2','EXPTIME'])
     image_types = classify_images(ic.summary)
 
-    conf['DIRECTORIES']['PATH'] = str(Path(os.getcwd())) #! path_config
-    conf['DIRECTORIES']['PATH_DATA'] = str(Path(os.getcwd())/'raw') #! path_config + 'raw'
-    conf['DIRECTORIES']['PATH_OUTPUT'] = str(Path(os.getcwd())/'reduced') #! path_config + 'reduced' 
+    conf['DIRECTORIES']['PATH'] = str(Path(os.getcwd()))
+    conf['DIRECTORIES']['PATH_DATA'] = str(Path(os.getcwd())/'raw')
+    conf['DIRECTORIES']['PATH_OUTPUT'] = str(Path(os.getcwd())/'reduced')
 
     # Update config based on image types
     if conf['REDUCTION']['use_BIAS']:
@@ -216,7 +209,7 @@ def check_files(path_config: str = None) -> json:
     else:
         logger.info('The reduced science frames with sky subtraction will not be saved.')
 
-    if conf['REDUCTION']['save_fringing']:
+    if conf['REDUCTION']['defringing']:
         logger.info('The reduced science frames with fringing correction will be saved.')
     else:
         logger.info('The reduced science frames with fringing correction will not be saved.')

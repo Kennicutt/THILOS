@@ -17,14 +17,13 @@ Fabricio Manuel Pérez Toledo <fabricio.perez@gtc.iac.es>
 """
 
 __author__="Fabricio M. Pérez-Toledo"
-__version__ = "0.1.6"
+__version__ = "0.3.0"
 __license__ = "GPL v3.0"
 
 import thilos
 from thilos.check_files import *
 from thilos.reduction_hcam import *
 from thilos.alignment_hcam import *
-#from thilos.astrometry_hcam import * FUTURE TOOL
 
 import argparse, time, os, shutil, sys
 import json, warnings
@@ -109,7 +108,6 @@ an account on Astrometry.net. Once you have the code that allows you to use the 
 you need to fill in the correct variable.")
     print(f"\n")
 
-    # Check if the configuration file exists (2025-08-04)
     if args.create_config:
         logger.info(f"Creating configuration file...")
         logger.info(f"Configuration file created successfully in the current directory")
@@ -139,75 +137,98 @@ you need to fill in the correct variable.")
     binning = conf['REDUCTION']['binning']
 
     # Is it valid?
-    if binning not in [1, 2, 3, 4]:
+    if binning not in [1, 2, 4]:
         logger.error(f'{bcl.FAIL}The binning value is not valid. Please check the configuration file{bcl.ENDC}')
         sys.exit()
 
     # Load the BPM files for each CCD concerning the binning value.
     list_bpms = []
-    for ccd in range(1, 6):
-        bpm_file = f"HCAM_BPM_CCD{ccd}_bin{binning}.fits"
-        #with as_file(files("THILOS").joinpath(bpm_file)) as bpm_path:
-        #with files("THILOS").joinpath(bpm_file) as bpm_path:  # type: ignore
-        bpm_path = Path(conf['DIRECTORIES']['PATH_BPMs']) / bpm_file
-        list_bpms.append(str(bpm_path))
+    if conf['REDUCTION']['apply_BPM']:
+        for ccd in range(1, 6):
+            bpm_file = f"HCAM_BPM_CCD{ccd}_bin{binning}.fits"
+            bpm_path = Path(conf['DIRECTORIES']['PATH_BPMs']) / bpm_file
+            list_bpms.append(str(bpm_path))
+    else:
+        logger.warning(f'{bcl.WARNING}The BPM files are not going to be applied{bcl.ENDC}')
+        list_bpms = None
         
     o = Reduction(main_path=conf['DIRECTORIES']['PATH_DATA'],
                 path_mask=list_bpms)
     o.get_imagetypes()
-    o.load_BPM()
+
+    if conf['REDUCTION']['apply_BPM']:
+        o.load_BPM()
+    
     o.check_binning()
     o.sort_down_drawer()
 
-    if conf['REDUCTION']['use_BIAS']:
+    if conf['REDUCTION']['use_reduction'] and conf['REDUCTION']['use_BIAS']:
         o.do_masterbias()
 
     else:
         logger.warning(f'{bcl.WARNING}The masterbiases are not going to be created{bcl.ENDC}')
 
-    if conf['REDUCTION']['use_FLAT']:
+    if conf['REDUCTION']['use_reduction'] and conf['REDUCTION']['use_FLAT']:
         o.do_masterflat()
 
     else:
         logger.warning(f'{bcl.WARNING}The masterflats are not going to be created{bcl.ENDC}')
     
-    if conf['REDUCTION']['use_STD']:
+    if conf['REDUCTION']['use_reduction'] and conf['REDUCTION']['use_STD']:
         o.get_std(no_CRs=conf['REDUCTION']['no_CRs'], contrast_arg = conf['REDUCTION']['contrast'],
             cr_threshold_arg = conf['REDUCTION']['cr_threshold'],
             neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'],
             apply_BPM=conf['REDUCTION']['apply_BPM'])
 
     else:
-        logger.warning(f'{bcl.WARNING}The STD star is not going to be reduced{bcl.ENDC}')
+        logger.warning(f'{bcl.WARNING}The STD star is not going to be reduced. It is likely not available{bcl.ENDC}')
+
+    if conf['REDUCTION']['use_reduction']:
+        o.get_target(no_CRs=conf['REDUCTION']['no_CRs'], contrast_arg = conf['REDUCTION']['contrast'],
+                cr_threshold_arg = conf['REDUCTION']['cr_threshold'],
+                neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'],
+                apply_BPM=conf['REDUCTION']['apply_BPM'])
+
+    if conf['REDUCTION']['use_reduction'] and conf['REDUCTION']['save_illumination_correction']:
+            o.illumination_correction()
+            logger.info(f'{bcl.OKGREEN}Illumination correction applied successfully{bcl.ENDC}')
     
-    o.get_target(no_CRs=conf['REDUCTION']['no_CRs'], contrast_arg = conf['REDUCTION']['contrast'],
-            cr_threshold_arg = conf['REDUCTION']['cr_threshold'],
-            neighbor_threshold_arg = conf['REDUCTION']['neighbor_threshold'], apply_flat=conf['REDUCTION']['use_FLAT'],
-            apply_BPM=conf['REDUCTION']['apply_BPM'])
-    
-    
-    if conf['REDUCTION']['save_fringing']:
-        o.remove_fringing()
-        logger.info(f'{bcl.OKGREEN}Fringing correction applied successfully{bcl.ENDC}')
+    if conf['REDUCTION']['use_reduction'] and conf['REDUCTION']['defringing']:
+        if conf['REDUCTION']['dithering']:
+            logger.info(f'{bcl.OKBLUE}Dithering is enabled. Fringing correction will be applied using the dithering method{bcl.ENDC}')
+            o.remove_fringing_dithering()
+            logger.info(f'{bcl.OKGREEN}Fringing correction applied successfully using dithering method{bcl.ENDC}')
+        else:
+            logger.info(f'{bcl.OKBLUE}Dithering is disabled. Fringing correction will be applied using the no-dithering method{bcl.ENDC}')
+            o.remove_fringing_no_dithering(path_fringe=conf['DIRECTORIES']['PATH_FRINGE'], binning=binning)
+            logger.info(f'{bcl.OKGREEN}Fringing correction applied successfully using no-dithering method{bcl.ENDC}')
     else:
         logger.warning(f'{bcl.WARNING}The fringing correction is not going to be executed{bcl.ENDC}')
 
-    if conf['REDUCTION']['save_illumination_correction']:
-        o.illumination_correction()
-        logger.info(f'{bcl.OKGREEN}Illumination correction applied successfully{bcl.ENDC}')
-
-    if conf['REDUCTION']['save_not_sky']:    
+    if conf['REDUCTION']['use_reduction'] and conf['REDUCTION']['save_not_sky']:    
         o.sustract_sky()
         logger.info(f'{bcl.OKGREEN}The sky subtraction has been applied successfully{bcl.ENDC}')
     else:
         logger.warning(f'{bcl.WARNING}The sky substraction is not going to be executed{bcl.ENDC}')
+
+    if conf['REDUCTION']['use_reduction']:
+        o.save_target(std=conf['REDUCTION']['save_std'])
+        o.save_target(std=conf['REDUCTION']['save_std'], fringing=conf['REDUCTION']['defringing'])
+        o.save_target(sky=conf['REDUCTION']['save_sky'])
+        o.save_target(fringing=conf['REDUCTION']['defringing'])    
+        o.save_target(not_sky=conf['REDUCTION']['save_not_sky'])
     
-    o.save_target(std=conf['REDUCTION']['save_std'])
-    o.save_target(std=conf['REDUCTION']['save_std'], fringing=conf['REDUCTION']['save_fringing'])
-    o.save_target(sky=conf['REDUCTION']['save_sky'])
-    o.save_target(fringing=conf['REDUCTION']['save_fringing'])    
-    o.save_target(not_sky=conf['REDUCTION']['save_not_sky'])
-    o.save_target(illumination=conf['REDUCTION']['save_illumination_correction'])
+        o.save_target(not_sky=conf['REDUCTION']['save_not_sky'],
+                      fringing=conf['REDUCTION']['defringing'])
+
+    if conf['REDUCTION']['use_reduction']:
+        if not conf['REDUCTION']['defringing']:
+            o.save_target(illumination=conf['REDUCTION']['save_illumination_correction'],
+                          sky=conf['REDUCTION']['save_sky'])
+        else:
+            o.save_target(illumination=conf['REDUCTION']['save_illumination_correction'],
+                          sky=conf['REDUCTION']['save_sky'],fringing=conf['REDUCTION']['defringing'])
+    
     logger.info(f'{bcl.OKBLUE}-------------- End of the reductions successfully --------------{bcl.ENDC}')
     print(2*"\n")
 
@@ -217,9 +238,9 @@ you need to fill in the correct variable.")
         logger.info(f"{bcl.OKBLUE}---------- Starting the alignments ----------{bcl.ENDC}")
         aligner = AstroImageAligner(min_snr=10.0, conf = conf)
         for filt in list(set(aligner.ic.summary['filtro'])):
-            for sky in ['SKY', 'NOSKY']:
-                if conf['REDUCTION']['save_not_sky'] or sky == 'SKY':
-                    logger.info(f'{bcl.OKCYAN}++++++++++ Aligment for {filt} & {sky} ++++++++++{bcl.ENDC}')
+            for sky in ['YES', 'NO']:
+                if conf['REDUCTION']['save_not_sky'] or sky == 'YES':
+                    logger.info(f'{bcl.OKCYAN}++++++++++ Aligment for {filt} & {o.dict_sky[sky]} ++++++++++{bcl.ENDC}')
                     aligner.run_aligning(filt, sky=sky)
                     header = aligner.ref_header.copy()
                     header['STACKED'] = (True, 'Stacked image')
@@ -227,7 +248,12 @@ you need to fill in the correct variable.")
                     logger.info(f"Estimated total exposure time: {header['exptime']} sec")
                     wcs = aligner.ref_wcs.copy()
                     logger.info(f"Updating the WCS information")
-                    save_fits(aligner.stacked_image, header, wcs, str(aligner.PATH_REDUCED / f'{PRG}_{OB}_{filt}_stacked_{sky}.fits'))
+                    if conf['ALIGNING']['defringing_stacked'] and ((filt == 'Sloan_i') or (filt == 'Sloan_z'))\
+                        and not conf['REDUCTION']['dithering']:
+                        logger.info(f"Applying fringing correction to stacked frame for {filt}")
+                        masterfringe = fits.getdata(Path(conf['DIRECTORIES']['PATH_FRINGE']) / f"FRINGE_MAP_{filt}_{binning}x{binning}.fits")
+                        aligner.stacked_image = defringe_no_dithering(aligner.stacked_image.data, masterfringe)['result']
+                    save_fits(aligner.stacked_image, header, wcs, str(aligner.PATH_REDUCED / f'{PRG}_{OB}_{filt}_stacked_{o.dict_sky[sky]}.fits'))
                     
                 else:
                     logger.warning(f'{bcl.WARNING}Alignments are not going to be executed for NOSKY{bcl.ENDC}')
